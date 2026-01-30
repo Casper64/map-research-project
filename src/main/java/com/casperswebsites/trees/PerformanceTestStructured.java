@@ -8,7 +8,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Outputs performance results to a CSV file
@@ -24,6 +23,7 @@ public class PerformanceTestStructured {
     private static final String OUTPUT_FILE = "performance_results.csv";
 
     private List<PerformanceResult> results = new ArrayList<>();
+    private static final Random random = new Random(21);
 
     public static void main(String[] args) {
         System.out.println("=== Structured Performance Test ===");
@@ -39,6 +39,7 @@ public class PerformanceTestStructured {
 
     private void runAllTests() {
         String[] operations = {
+            "Random_Lookup",
             "Sequential_Insert",
             "Random_Insert",
             "Sequential_Delete",
@@ -84,6 +85,9 @@ public class PerformanceTestStructured {
         PerformanceResult result = null;
 
         switch (operation) {
+            case "Random_Lookup":
+                result = benchmarkRandomLookup(structureName, map, size);
+                break;
             case "Sequential_Insert":
                 result = benchmarkSequentialInserts(structureName, map, size);
                 break;
@@ -107,6 +111,51 @@ public class PerformanceTestStructured {
         if (result != null) {
             results.add(result);
         }
+    }
+
+       private PerformanceResult benchmarkRandomLookup(
+        String structureName,
+        Map<Integer, String> map,
+        int size
+    ) {
+        // lookup 25% of the set size
+        int lookups = size / 4;
+        // not using the generateRandomKeys functions to control the min and max value
+        Integer[] randomIndices = new Integer[lookups];
+        for (int i = 0; i < lookups; i++) {
+            randomIndices[i] = random.nextInt(0, size);
+        }
+
+        // Measure memory usage
+        MemoryStats memoryStats = measureMemoryUsage(() -> {
+            map.clear();
+            for (int i = 0; i < size; i++) {
+                map.put(i, "value" + i);
+            }
+
+            int sum = 0;
+            for (int i = 0; i < lookups; i++) {
+                sum += map.get(randomIndices[i]).length();
+            }
+            // use our sum to not optimise the loop away
+            map.put(size, String.valueOf(sum));
+        });
+
+        // Measure execution time
+        long timeResult = benchmark(() -> {
+            map.clear();
+            for (int i = 0; i < size; i++) {
+                map.put(i, "value" + i);
+            }
+        });
+
+        return new PerformanceResult(
+            structureName,
+            "Random_Lookup",
+            size,
+            timeResult,
+            memoryStats.getMemoryUsed() / 1024
+        );
     }
 
     private PerformanceResult benchmarkSequentialInserts(
@@ -418,7 +467,6 @@ public class PerformanceTestStructured {
 
     private Integer[] generateRandomKeys(int size) {
         Set<Integer> keySet = new HashSet<>();
-        ThreadLocalRandom random = ThreadLocalRandom.current();
 
         while (keySet.size() < size) {
             keySet.add(random.nextInt(size * 10));

@@ -4,6 +4,9 @@
  *
  * The code in this file is largely inspired by
  * https://www.happycoders.eu/algorithms/red-black-tree-java/
+ * 
+ * I changed recursive methods to iterative approaches and added
+ * support for Iterators and Streams
  */
 
 package com.casperswebsites.trees.redblack;
@@ -11,7 +14,6 @@ package com.casperswebsites.trees.redblack;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
